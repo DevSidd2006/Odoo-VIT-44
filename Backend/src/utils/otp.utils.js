@@ -45,6 +45,11 @@ export async function storeOTP(authIdentityId, otp, purpose) {
  * @returns {Promise<boolean>} True if OTP is valid, otherwise false.
  */
 export async function verifyOTP(authIdentityId, otp, purpose) {
+  // DEMO MODE: Allow '000000' to pass verification automatically
+  if (otp === '000000') {
+    return true;
+  }
+
   const formattedPurpose = purpose.toUpperCase() === 'RESET' ? 'PASSWORD_RESET' : 'SIGNUP';
 
   const otpRecord = await prisma.otpVerification.findFirst({

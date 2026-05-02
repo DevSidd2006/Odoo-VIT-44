@@ -73,7 +73,7 @@ model UserProfile {
   authIdentityId Int       @unique
   fullName       String    @db.VarChar(150)
   phone          String?   @unique
-  gender         Gender
+  gender         Gender?
   dateOfBirth    DateTime? @db.Date
   profilePhoto   String?
 
