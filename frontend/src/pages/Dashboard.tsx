@@ -3,6 +3,13 @@ import { useNavigate } from 'react-router-dom';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
 
   const appointments = [
     { id: 1, doctor: 'Dr. Sarah Johnson', specialty: 'Cardiologist', date: 'May 15, 2024', time: '10:00 AM', status: 'Upcoming' },
@@ -20,9 +27,9 @@ const Dashboard: React.FC = () => {
       <header className="header">
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Clinic Appointment Portal</h1>
-          <p style={{ color: 'var(--secondary)', fontSize: '0.875rem' }}>Manage your health visits</p>
+          <p style={{ color: 'var(--secondary)', fontSize: '0.875rem' }}>Welcome back, {user.fullName || 'User'}</p>
         </div>
-        <button onClick={() => navigate('/login')} className="auth-link" style={{ fontSize: '0.875rem' }}>Logout</button>
+        <button onClick={handleLogout} className="auth-link" style={{ fontSize: '0.875rem', cursor: 'pointer', background: 'none', border: 'none' }}>Logout</button>
       </header>
 
       <div style={{ marginBottom: '3rem' }}>
