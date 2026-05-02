@@ -277,7 +277,7 @@ async function createBooking(req, res) {
     const booking = {
       id: uuidv4(),
       appointmentTypeId,
-      customerId: req.user.id,
+      customerId: req.user.userId,
       resourceId: finalResourceId || null,
       userId: finalUserId || null,
       date,
@@ -321,7 +321,7 @@ function listBookings(req, res) {
     // Filter by role
     if (req.user.role === 'organiser') {
       const organisersTypes = store.appointmentTypes
-        .filter((at) => at.organiserId === req.user.id)
+        .filter((at) => at.organiserId === req.user.userId)
         .map((at) => at.id);
       bookings = bookings.filter((b) => organisersTypes.includes(b.appointmentTypeId));
     }
@@ -394,7 +394,7 @@ function getMyBookings(req, res) {
     const { status } = req.query; // upcoming, past, all
     const today = startOfToday();
 
-    let bookings = store.bookings.filter((b) => b.customerId === req.user.id);
+    let bookings = store.bookings.filter((b) => b.customerId === req.user.userId);
 
     // Filter by status
     if (status === 'upcoming') {
@@ -519,7 +519,7 @@ function rescheduleBooking(req, res) {
     }
 
     // Customer can only reschedule their own
-    if (booking.customerId !== req.user.id) {
+    if (booking.customerId !== req.user.userId) {
       return res.status(403).json({
         success: false,
         message: 'Access denied',
@@ -603,7 +603,7 @@ function cancelBooking(req, res) {
 
     // Check access and cutoff
     if (req.user.role === 'customer') {
-      if (booking.customerId !== req.user.id) {
+      if (booking.customerId !== req.user.userId) {
         return res.status(403).json({
           success: false,
           message: 'Access denied',
@@ -627,7 +627,7 @@ function cancelBooking(req, res) {
       const appointmentType = store.appointmentTypes.find(
         (at) => at.id === booking.appointmentTypeId
       );
-      if (!appointmentType || appointmentType.organiserId !== req.user.id) {
+      if (!appointmentType || appointmentType.organiserId !== req.user.userId) {
         return res.status(403).json({
           success: false,
           message: 'Access denied',
@@ -689,7 +689,7 @@ function confirmBooking(req, res) {
       const appointmentType = store.appointmentTypes.find(
         (at) => at.id === booking.appointmentTypeId
       );
-      if (!appointmentType || appointmentType.organiserId !== req.user.id) {
+      if (!appointmentType || appointmentType.organiserId !== req.user.userId) {
         return res.status(403).json({
           success: false,
           message: 'Access denied',

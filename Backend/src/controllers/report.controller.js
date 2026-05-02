@@ -44,7 +44,7 @@ export function getTotalAppointmentsReport(req, res) {
     let appointmentTypes = [...store.appointmentTypes];
     if (req.user.role === 'organiser') {
       appointmentTypes = appointmentTypes.filter(
-        (at) => at.organiserId === req.user.id
+        (at) => at.organiserId === req.user.userId
       );
     }
 
@@ -140,7 +140,7 @@ export function getPeakHoursReport(req, res) {
     let appointmentTypes = [...store.appointmentTypes];
     if (req.user.role === 'organiser') {
       appointmentTypes = appointmentTypes.filter(
-        (at) => at.organiserId === req.user.id
+        (at) => at.organiserId === req.user.userId
       );
     }
 
@@ -204,7 +204,7 @@ export function getProviderUtilizationReport(req, res) {
     // Get list of organisers to analyze
     let organisers = store.users.filter((u) => u.role === 'organiser');
     if (req.user.role === 'organiser') {
-      organisers = organisers.filter((u) => u.id === req.user.id);
+      organisers = organisers.filter((u) => u.id === req.user.userId);
     }
 
     const utilization = organisers.map((organiser) => {
