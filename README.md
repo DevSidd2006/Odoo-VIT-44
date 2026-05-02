@@ -1,49 +1,41 @@
-# Management Web App Structure
+# 🗓️ Appointly: The Perfect Appointment System
 
-This workspace is scaffolded as a clean, scalable structure for a management web application.
+A premium, minimal, and highly efficient booking platform designed specifically for clinics and healthcare providers.
 
-## Layout
+## 🚀 Key Features
+- **Smart Onboarding:** Secure Signup/Login with 6-digit OTP verification and password recovery.
+- **Clinic Portal:** Clean discovery interface for patients to find specialists and services.
+- **Guided Booking:** A seamless, multi-step appointment flow with real-time availability.
+- **Organiser Command Center:** Robust dashboard for providers to monitor stats, bookings, and resource utilization.
+- **Automated Notifications:** Integrated email services via Nodemailer for OTPs and confirmations.
 
-```text
-frontend/
-  public/
-  src/
-    app/
-    assets/
-    components/
-    features/
-    hooks/
-    layouts/
-    pages/
-    services/
-    store/
-    styles/
-    utils/
-  tests/
+## 🛠️ Tech Stack
+- **Frontend:** React + Vite + TypeScript (Clinic Minimal UI)
+- **Backend:** Node.js + Express (MVC Architecture)
+- **Security:** JWT Authentication, Bcrypt Password Hashing
+- **Tools:** Postman-ready APIs, Environment-based configuration
 
-backend/
-  src/
-    config/
-    controllers/
-    middleware/
-    models/
-    routes/
-    services/
-    utils/
-  tests/
+## 📦 Project Structure
+- `/frontend`: Modern React application with Vite.
+- `/Backend`: Scalable Express.js API foundation.
+- `/docs`: Project documentation and requirement PDFs.
 
-shared/
-  constants/
-  types/
+## ⚡ Quick Start
 
-docs/
+### 1. Setup Backend
+```bash
+cd Backend
+npm install
+# Configure .env (see .env.example)
+npm run dev
 ```
 
-## Purpose
+### 2. Setup Frontend
+```bash
+cd frontend
+npm install
+npm start
+```
 
-- `frontend`: user interface, screens, shared UI pieces, and client-side state.
-- `backend`: API, business logic, persistence, and request handling.
-- `shared`: common types and constants used by both sides.
-- `docs`: project notes, API docs, and product guidance.
-
-If you want, I can next turn this into a specific stack such as React + Node/Express, Next.js, or Vue + NestJS.
+---
+*Built for efficiency. Designed for trust.*

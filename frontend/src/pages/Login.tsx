@@ -1,15 +1,30 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { api } from '../services/api';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Logging in with:', { email, password });
-    navigate('/dashboard');
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await api.post('/auth/login', { email, password });
+      // Store token
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -19,6 +34,8 @@ const Login: React.FC = () => {
           <h1 className="auth-title">Welcome Back</h1>
           <p className="auth-subtitle">Enter your credentials to access your account</p>
         </div>
+
+        {error && <div style={{ color: 'var(--error)', fontSize: '0.875rem', marginBottom: '1rem', textAlign: 'center' }}>{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -50,8 +67,8 @@ const Login: React.FC = () => {
             />
           </div>
 
-          <button type="submit" className="button">
-            Sign In
+          <button type="submit" className="button" disabled={loading}>
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 

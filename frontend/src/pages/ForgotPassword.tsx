@@ -1,14 +1,31 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { api } from '../services/api';
 
 const ForgotPassword: React.FC = () => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Requesting password reset for:', email);
-    setSubmitted(true);
+    setLoading(true);
+    setError('');
+
+    try {
+      await api.post('/auth/forgot-password', { email });
+      setSubmitted(true);
+      // Optional: Auto-navigate to verify-otp after a delay
+      setTimeout(() => {
+        navigate('/verify-otp', { state: { email, type: 'reset' } });
+      }, 2000);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -20,6 +37,8 @@ const ForgotPassword: React.FC = () => {
               <h1 className="auth-title">Forgot Password</h1>
               <p className="auth-subtitle">Enter your email and we'll send you reset instructions</p>
             </div>
+
+            {error && <div style={{ color: 'var(--error)', fontSize: '0.875rem', marginBottom: '1rem', textAlign: 'center' }}>{error}</div>}
 
             <form onSubmit={handleSubmit}>
               <div className="form-group">
@@ -34,8 +53,8 @@ const ForgotPassword: React.FC = () => {
                 />
               </div>
 
-              <button type="submit" className="button">
-                Send Instructions
+              <button type="submit" className="button" disabled={loading}>
+                {loading ? 'Sending...' : 'Send Instructions'}
               </button>
             </form>
           </>
