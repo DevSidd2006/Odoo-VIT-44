@@ -4,6 +4,7 @@ import { validationResult } from 'express-validator';
 import { store } from '../store/index.js';
 import { generateToken } from '../utils/jwt.utils.js';
 import { generateOTP, storeOTP, verifyOTP } from '../utils/otp.utils.js';
+import { sendEmail } from '../utils/email.utils.js';
 
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$/;
 
@@ -67,6 +68,13 @@ export async function signup(req, res) {
 
     const otp = generateOTP();
     storeOTP(user.email, otp, 'signup');
+
+    await sendEmail(
+      user.email,
+      'Verify your account',
+      `Your Appointly OTP is: ${otp}`,
+      `<h1>Welcome to Appointly</h1><p>Your verification code is: <strong>${otp}</strong></p>`
+    );
 
     return res.status(201).json({
       success: true,
@@ -206,7 +214,7 @@ export async function login(req, res) {
  * @param {import('express').Response} res - Express response object.
  * @returns {import('express').Response | void} HTTP response.
  */
-export function forgotPassword(req, res) {
+export async function forgotPassword(req, res) {
   if (handleValidationErrors(req, res)) {
     return;
   }
@@ -219,6 +227,13 @@ export function forgotPassword(req, res) {
     if (user) {
       const otp = generateOTP();
       storeOTP(normalizedEmail, otp, 'reset');
+
+      await sendEmail(
+        normalizedEmail,
+        'Reset your password',
+        `Your Appointly reset OTP is: ${otp}`,
+        `<p>You requested a password reset. Your OTP is: <strong>${otp}</strong></p>`
+      );
     }
 
     return res.status(200).json({
@@ -294,7 +309,7 @@ export async function resetPassword(req, res) {
  * @param {import('express').Response} res - Express response object.
  * @returns {import('express').Response | void} HTTP response.
  */
-export function resendOtp(req, res) {
+export async function resendOtp(req, res) {
   if (handleValidationErrors(req, res)) {
     return;
   }
@@ -309,6 +324,13 @@ export function resendOtp(req, res) {
 
     const otp = generateOTP();
     storeOTP(normalizedEmail, otp, type);
+
+    await sendEmail(
+      normalizedEmail,
+      'Your Appointly OTP',
+      `Your new OTP is: ${otp}`,
+      `<p>Your new verification code is: <strong>${otp}</strong></p>`
+    );
 
     return res.status(200).json({
       success: true,
