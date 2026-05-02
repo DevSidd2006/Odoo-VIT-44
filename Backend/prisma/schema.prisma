@@ -125,14 +125,23 @@ model ServiceCategory {
 }
 
 model Service {
-  id          Int     @id @default(autoincrement())
-  categoryId  Int
-  name        String
-  description String?
-  duration    Int     @default(30)
-  price       Decimal @db.Decimal(10, 2)
-  bufferTime  Int     @default(0)
-  isPublished Boolean @default(false)
+  id                      Int     @id @default(autoincrement())
+  categoryId              Int
+  name                    String
+  description             String?
+  duration                Int     @default(30)
+  price                   Decimal @db.Decimal(10, 2)
+  bufferTime              Int     @default(0)
+  isPublished             Boolean @default(false)
+  
+  // Phase 3 Additions (Admin Configs)
+  location                String?
+  introMessage            String?
+  confirmMessage          String?
+  manualConfirmation      Boolean @default(false)
+  manageCapacity          Boolean @default(false)
+  capacityLimit           Int     @default(1)
+  cancellationCutoffHours Int     @default(0)
 
   category         ServiceCategory          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   providerMappings ProviderServiceMapping[]

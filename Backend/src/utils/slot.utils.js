@@ -325,9 +325,15 @@ export function generateAvailableSlots(appointmentTypeId, date) {
     return [];
   }
 
-  const scheduleSlot = getScheduleForDate(appointmentType, date);
+  let scheduleSlot = getScheduleForDate(appointmentType, date);
+  
+  // If no schedule exists, create default full-day schedule (9AM-6PM)
   if (!scheduleSlot || !Array.isArray(scheduleSlot.windows)) {
-    return [];
+    scheduleSlot = {
+      windows: [
+        { from: '09:00', to: '18:00' }
+      ]
+    };
   }
 
   const bookingRules = getBookingRules(appointmentTypeId);
