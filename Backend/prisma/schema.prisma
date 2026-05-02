@@ -1,0 +1,84 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Enums
+enum OtpPurpose {
+  SIGNUP
+  PASSWORD_RESET
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+/// Represents user roles within the system (e.g., ADMIN, PATIENT, DOCTOR)
+model Role {
+  id          Int            @id @default(autoincrement())
+  roleName    String         @unique
+  description String?
+  identities  AuthIdentity[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Core authentication table storing credentials and account status
+model AuthIdentity {
+  id           Int       @id @default(autoincrement())
+  roleId       Int
+  email        String    @unique @db.VarChar(255)
+  passwordHash String
+  isVerified   Boolean   @default(false)
+  isActive     Boolean   @default(true)
+  lastLogin    DateTime?
+
+  role        Role              @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  userProfile UserProfile?
+  otps        OtpVerification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Stores OTP codes for various verification purposes like signup or password resets
+model OtpVerification {
+  id             Int        @id @default(autoincrement())
+  authIdentityId Int
+  otpCode        String     @db.VarChar(10)
+  purpose        OtpPurpose
+  expiresAt      DateTime
+  isUsed         Boolean    @default(false)
+
+  authIdentity AuthIdentity @relation(fields: [authIdentityId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Stores personal details for a user, linked 1:1 with their auth identity
+model UserProfile {
+  id             Int       @id @default(autoincrement())
+  authIdentityId Int       @unique
+  fullName       String    @db.VarChar(150)
+  phone          String?   @unique
+  gender         Gender
+  dateOfBirth    DateTime? @db.Date
+  profilePhoto   String?
+
+  authIdentity AuthIdentity @relation(fields: [authIdentityId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
