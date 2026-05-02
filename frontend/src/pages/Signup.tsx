@@ -30,19 +30,20 @@ const Signup: React.FC = () => {
   return (
     <div className="auth-container">
       <div className="auth-card animate-fade-in">
-        <div className="auth-header">
-          <h1 className="auth-title">Create Account</h1>
-          <p className="auth-subtitle">Join the perfect booking system today</p>
+        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+          <div style={{ width: '50px', height: '50px', background: 'var(--accent)', borderRadius: '12px', margin: '0 auto 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.5rem' }}>A</div>
+          <h1 style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>Create Account</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Start booking your appointments today</p>
         </div>
 
         {error && (
-          <div style={{ backgroundColor: '#fee2e2', color: '#dc2626', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem', fontSize: '0.875rem', textAlign: 'center' }}>
+          <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#f87171', padding: '0.75rem', borderRadius: '0.75rem', marginBottom: '1.5rem', fontSize: '0.875rem', textAlign: 'center' }}>
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
+          <div className="form-group" style={{ marginBottom: '1.25rem' }}>
             <label className="label">Full Name</label>
             <input
               type="text"
@@ -54,7 +55,7 @@ const Signup: React.FC = () => {
             />
           </div>
 
-          <div className="form-group">
+          <div className="form-group" style={{ marginBottom: '1.25rem' }}>
             <label className="label">Email Address</label>
             <input
               type="email"
@@ -66,7 +67,7 @@ const Signup: React.FC = () => {
             />
           </div>
 
-          <div className="form-group">
+          <div className="form-group" style={{ marginBottom: '1.25rem' }}>
             <label className="label">Password</label>
             <input
               type="password"
@@ -78,16 +79,14 @@ const Signup: React.FC = () => {
             />
           </div>
 
-          <button type="submit" className="button" disabled={loading}>
+          <button type="submit" className="button" style={{ width: '100%', marginTop: '1.5rem' }} disabled={loading}>
             {loading ? 'Creating Account...' : 'Sign Up'}
           </button>
         </form>
 
-        <div className="auth-footer">
-          Already have an account?
-          <Link to="/login" className="auth-link">
-            Sign in
-          </Link>
+        <div style={{ marginTop: '2rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+          Already have an account?{' '}
+          <Link to="/login" style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>Sign in</Link>
         </div>
       </div>
     </div>
