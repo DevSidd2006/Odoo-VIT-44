@@ -3,6 +3,7 @@ import { validationResult } from 'express-validator';
 import prisma from '../config/prisma.js';
 import { generateToken } from '../utils/jwt.utils.js';
 import { generateOTP, storeOTP, verifyOTP } from '../utils/otp.utils.js';
+import { sendEmail } from '../utils/email.utils.js';
 
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$/;
 
@@ -72,6 +73,7 @@ export async function signup(req, res) {
         email: normalizedEmail,
         passwordHash: hashedPassword,
         roleId: role.id,
+        isVerified: false, // Set to false so user has to verify via the OTP screen
         userProfile: {
           create: {
             fullName,
@@ -80,9 +82,16 @@ export async function signup(req, res) {
       },
     });
 
-    // 4. Generate and store OTP
-    const otp = generateOTP();
+    // 4. Generate and store OTP (still creating it for database consistency)
+    const otp = '000000'; // DEMO MODE: Static OTP
     await storeOTP(user.id, otp, 'signup');
+
+    await sendEmail(
+      user.email,
+      'Verify your account',
+      `Your Appointly OTP is: ${otp}`,
+      `<h1>Welcome to Appointly</h1><p>Your verification code is: <strong>${otp}</strong></p>`
+    );
 
     return res.status(201).json({
       success: true,
@@ -246,8 +255,15 @@ export async function forgotPassword(req, res) {
     });
 
     if (user) {
-      const otp = generateOTP();
+      const otp = '000000'; // DEMO MODE: Static OTP
       await storeOTP(user.id, otp, 'reset');
+
+      await sendEmail(
+        normalizedEmail,
+        'Reset your password',
+        `Your Appointly reset OTP is: ${otp}`,
+        `<p>You requested a password reset. Your OTP is: <strong>${otp}</strong></p>`
+      );
     }
 
     return res.status(200).json({
@@ -354,8 +370,15 @@ export async function resendOtp(req, res) {
       },
     });
 
-    const otp = generateOTP();
+    const otp = '000000'; // DEMO MODE: Static OTP
     await storeOTP(user.id, otp, type);
+
+    await sendEmail(
+      normalizedEmail,
+      'Your Appointly OTP',
+      `Your new OTP is: ${otp}`,
+      `<p>Your new verification code is: <strong>${otp}</strong></p>`
+    );
 
     return res.status(200).json({
       success: true,

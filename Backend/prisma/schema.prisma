@@ -35,14 +35,20 @@ enum AppointmentStatus {
   CONFIRMED
   CANCELLED
   COMPLETED
+<<<<<<< HEAD
   RESCHEDULED
+=======
+>>>>>>> d832930ba482d29ef9a82291e4538cbb27c31cdb
 }
 
 enum PaymentStatus {
   PENDING
   PAID
   REFUNDED
+<<<<<<< HEAD
   FAILED
+=======
+>>>>>>> d832930ba482d29ef9a82291e4538cbb27c31cdb
 }
 
 enum QuestionType {
@@ -52,6 +58,7 @@ enum QuestionType {
   BOOLEAN
 }
 
+<<<<<<< HEAD
 enum ProviderType {
   INDIVIDUAL
   RESOURCE
@@ -66,6 +73,9 @@ enum AssignmentType {
 // PHASE 1: AUTHENTICATION MODULE
 // ==========================================
 
+=======
+/// Represents user roles within the system (e.g., ADMIN, PATIENT, DOCTOR)
+>>>>>>> d832930ba482d29ef9a82291e4538cbb27c31cdb
 model Role {
   id          Int            @id @default(autoincrement())
   roleName    String         @unique
@@ -127,10 +137,13 @@ model UserProfile {
   updatedAt DateTime @updatedAt
 }
 
+<<<<<<< HEAD
 // ==========================================
 // PHASE 2: SERVICES & RESOURCES
 // ==========================================
 
+=======
+>>>>>>> d832930ba482d29ef9a82291e4538cbb27c31cdb
 model ServiceCategory {
   id          Int       @id @default(autoincrement())
   name        String    @unique
@@ -152,6 +165,7 @@ model Service {
   bufferTime  Int     @default(0)
   isPublished Boolean @default(false)
 
+<<<<<<< HEAD
   // Wireframe specific fields
   location       String?
   introMessage   String?        @db.Text
@@ -160,6 +174,8 @@ model Service {
   slug           String         @unique
   image          String?
 
+=======
+>>>>>>> d832930ba482d29ef9a82291e4538cbb27c31cdb
   category         ServiceCategory          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   providerMappings ProviderServiceMapping[]
   questions        BookingQuestion[]
@@ -167,8 +183,11 @@ model Service {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+<<<<<<< HEAD
 
   @@unique([categoryId, name])
+=======
+>>>>>>> d832930ba482d29ef9a82291e4538cbb27c31cdb
 }
 
 model ProviderProfile {
@@ -177,7 +196,10 @@ model ProviderProfile {
   bio            String?
   rating         Float   @default(0.0)
   isActive       Boolean @default(true)
+<<<<<<< HEAD
   providerType   ProviderType @default(INDIVIDUAL)
+=======
+>>>>>>> d832930ba482d29ef9a82291e4538cbb27c31cdb
 
   authIdentity    AuthIdentity             @relation(fields: [authIdentityId], references: [id], onDelete: Cascade)
   serviceMappings ProviderServiceMapping[]
@@ -199,10 +221,13 @@ model ProviderServiceMapping {
   @@unique([providerId, serviceId])
 }
 
+<<<<<<< HEAD
 // ==========================================
 // PHASE 2: SCHEDULING
 // ==========================================
 
+=======
+>>>>>>> d832930ba482d29ef9a82291e4538cbb27c31cdb
 model AvailabilityPlan {
   id         Int              @id @default(autoincrement())
   providerId Int
@@ -221,10 +246,16 @@ model ScheduleSlot {
   planId       Int
   dayOfWeek    Int? // 0-6 (Weekly)
   specificDate DateTime? // (Flexible)
+<<<<<<< HEAD
   startTime    String // HH:mm format
   endTime      String // HH:mm format
   capacity     Int       @default(1)
   bookedCount  Int       @default(0)
+=======
+  startTime    String // HH:mm
+  endTime      String // HH:mm
+  capacity     Int       @default(1)
+>>>>>>> d832930ba482d29ef9a82291e4538cbb27c31cdb
   isBlocked    Boolean   @default(false)
 
   plan         AvailabilityPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
@@ -234,10 +265,13 @@ model ScheduleSlot {
   updatedAt DateTime @updatedAt
 }
 
+<<<<<<< HEAD
 // ==========================================
 // PHASE 2: BOOKINGS & PAYMENTS
 // ==========================================
 
+=======
+>>>>>>> d832930ba482d29ef9a82291e4538cbb27c31cdb
 model Appointment {
   id                Int               @id @default(autoincrement())
   customerId        Int
@@ -248,7 +282,10 @@ model Appointment {
   endTime           DateTime
   status            AppointmentStatus @default(PENDING)
   totalPrice        Decimal           @db.Decimal(10, 2)
+<<<<<<< HEAD
   location          String? // Snapshotted from service
+=======
+>>>>>>> d832930ba482d29ef9a82291e4538cbb27c31cdb
   rescheduledFromId Int?              @unique
 
   customer        AuthIdentity      @relation(fields: [customerId], references: [id], onDelete: Restrict)
@@ -284,7 +321,10 @@ model BookingQuestion {
   serviceId  Int
   label      String
   type       QuestionType @default(TEXT)
+<<<<<<< HEAD
   displayOrder Int        @default(0)
+=======
+>>>>>>> d832930ba482d29ef9a82291e4538cbb27c31cdb
   isRequired Boolean      @default(true)
 
   service   Service            @relation(fields: [serviceId], references: [id], onDelete: Cascade)
@@ -311,7 +351,10 @@ model Payment {
   id            Int           @id @default(autoincrement())
   appointmentId Int           @unique
   amount        Decimal       @db.Decimal(10, 2)
+<<<<<<< HEAD
   currency      String        @default("INR")
+=======
+>>>>>>> d832930ba482d29ef9a82291e4538cbb27c31cdb
   status        PaymentStatus @default(PENDING)
   transactionId String?       @unique
   method        String?
