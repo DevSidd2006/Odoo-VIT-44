@@ -1,7 +1,6 @@
 import bcrypt from 'bcryptjs';
-import { v4 as uuidv4 } from 'uuid';
 import { validationResult } from 'express-validator';
-import { store } from '../store/index.js';
+import prisma from '../config/prisma.js';
 import { generateToken } from '../utils/jwt.utils.js';
 import { generateOTP, storeOTP, verifyOTP } from '../utils/otp.utils.js';
 
@@ -29,10 +28,6 @@ function handleValidationErrors(req, res) {
 
 /**
  * Handles user signup and sends signup OTP.
- *
- * @param {import('express').Request} req - Express request object.
- * @param {import('express').Response} res - Express response object.
- * @returns {Promise<import('express').Response | void>} HTTP response.
  */
 export async function signup(req, res) {
   if (handleValidationErrors(req, res)) {
@@ -43,7 +38,11 @@ export async function signup(req, res) {
     const { fullName, email, password } = req.body;
     const normalizedEmail = email.toLowerCase();
 
-    const existingUser = store.users.find((user) => user.email === normalizedEmail);
+    // 1. Check if user already exists
+    const existingUser = await prisma.authIdentity.findUnique({
+      where: { email: normalizedEmail },
+    });
+
     if (existingUser) {
       return res.status(409).json({
         success: false,
@@ -51,22 +50,39 @@ export async function signup(req, res) {
       });
     }
 
+    // 2. Ensure 'CUSTOMER' role exists
+    let role = await prisma.role.findUnique({
+      where: { roleName: 'CUSTOMER' },
+    });
+
+    if (!role) {
+      role = await prisma.role.create({
+        data: {
+          roleName: 'CUSTOMER',
+          description: 'Standard customer user',
+        },
+      });
+    }
+
+    // 3. Create AuthIdentity and UserProfile in a transaction
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = {
-      id: uuidv4(),
-      fullName,
-      email: normalizedEmail,
-      password: hashedPassword,
-      role: 'customer',
-      isActive: true,
-      isVerified: false,
-      createdAt: new Date(),
-    };
 
-    store.users.push(user);
+    const user = await prisma.authIdentity.create({
+      data: {
+        email: normalizedEmail,
+        passwordHash: hashedPassword,
+        roleId: role.id,
+        userProfile: {
+          create: {
+            fullName,
+          },
+        },
+      },
+    });
 
+    // 4. Generate and store OTP
     const otp = generateOTP();
-    storeOTP(user.email, otp, 'signup');
+    await storeOTP(user.id, otp, 'signup');
 
     return res.status(201).json({
       success: true,
@@ -74,6 +90,7 @@ export async function signup(req, res) {
       userId: user.id,
     });
   } catch (error) {
+    console.error('[Signup Error]:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal Server Error',
@@ -83,12 +100,8 @@ export async function signup(req, res) {
 
 /**
  * Verifies a signup or reset OTP.
- *
- * @param {import('express').Request} req - Express request object.
- * @param {import('express').Response} res - Express response object.
- * @returns {import('express').Response | void} HTTP response.
  */
-export function verifyOtp(req, res) {
+export async function verifyOtp(req, res) {
   if (handleValidationErrors(req, res)) {
     return;
   }
@@ -97,7 +110,10 @@ export function verifyOtp(req, res) {
     const { email, otp, type } = req.body;
     const normalizedEmail = email.toLowerCase();
 
-    const user = store.users.find((item) => item.email === normalizedEmail);
+    const user = await prisma.authIdentity.findUnique({
+      where: { email: normalizedEmail },
+    });
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -105,7 +121,7 @@ export function verifyOtp(req, res) {
       });
     }
 
-    const isValid = verifyOTP(normalizedEmail, otp, type);
+    const isValid = await verifyOTP(user.id, otp, type);
     if (!isValid) {
       return res.status(400).json({
         success: false,
@@ -114,7 +130,10 @@ export function verifyOtp(req, res) {
     }
 
     if (type === 'signup') {
-      user.isVerified = true;
+      await prisma.authIdentity.update({
+        where: { id: user.id },
+        data: { isVerified: true },
+      });
     }
 
     return res.status(200).json({
@@ -122,6 +141,7 @@ export function verifyOtp(req, res) {
       message: 'Verified successfully',
     });
   } catch (error) {
+    console.error('[VerifyOtp Error]:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal Server Error',
@@ -131,10 +151,6 @@ export function verifyOtp(req, res) {
 
 /**
  * Authenticates a user and returns JWT token.
- *
- * @param {import('express').Request} req - Express request object.
- * @param {import('express').Response} res - Express response object.
- * @returns {Promise<import('express').Response | void>} HTTP response.
  */
 export async function login(req, res) {
   if (handleValidationErrors(req, res)) {
@@ -145,7 +161,14 @@ export async function login(req, res) {
     const { email, password } = req.body;
     const normalizedEmail = email.toLowerCase();
 
-    const user = store.users.find((item) => item.email === normalizedEmail);
+    const user = await prisma.authIdentity.findUnique({
+      where: { email: normalizedEmail },
+      include: {
+        role: true,
+        userProfile: true,
+      },
+    });
+
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -153,7 +176,7 @@ export async function login(req, res) {
       });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
@@ -175,10 +198,16 @@ export async function login(req, res) {
       });
     }
 
+    // Update last login
+    await prisma.authIdentity.update({
+      where: { id: user.id },
+      data: { lastLogin: new Date() },
+    });
+
     const token = generateToken({
       userId: user.id,
       email: user.email,
-      role: user.role,
+      role: user.role.roleName,
     });
 
     return res.status(200).json({
@@ -186,12 +215,13 @@ export async function login(req, res) {
       token,
       user: {
         id: user.id,
-        fullName: user.fullName,
+        fullName: user.userProfile?.fullName,
         email: user.email,
-        role: user.role,
+        role: user.role.roleName,
       },
     });
   } catch (error) {
+    console.error('[Login Error]:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal Server Error',
@@ -201,12 +231,8 @@ export async function login(req, res) {
 
 /**
  * Sends reset OTP if the account exists.
- *
- * @param {import('express').Request} req - Express request object.
- * @param {import('express').Response} res - Express response object.
- * @returns {import('express').Response | void} HTTP response.
  */
-export function forgotPassword(req, res) {
+export async function forgotPassword(req, res) {
   if (handleValidationErrors(req, res)) {
     return;
   }
@@ -215,10 +241,13 @@ export function forgotPassword(req, res) {
     const { email } = req.body;
     const normalizedEmail = email.toLowerCase();
 
-    const user = store.users.find((item) => item.email === normalizedEmail);
+    const user = await prisma.authIdentity.findUnique({
+      where: { email: normalizedEmail },
+    });
+
     if (user) {
       const otp = generateOTP();
-      storeOTP(normalizedEmail, otp, 'reset');
+      await storeOTP(user.id, otp, 'reset');
     }
 
     return res.status(200).json({
@@ -226,6 +255,7 @@ export function forgotPassword(req, res) {
       message: 'Reset OTP sent if email exists',
     });
   } catch (error) {
+    console.error('[ForgotPassword Error]:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal Server Error',
@@ -235,10 +265,6 @@ export function forgotPassword(req, res) {
 
 /**
  * Resets user password using reset OTP.
- *
- * @param {import('express').Request} req - Express request object.
- * @param {import('express').Response} res - Express response object.
- * @returns {Promise<import('express').Response | void>} HTTP response.
  */
 export async function resetPassword(req, res) {
   if (handleValidationErrors(req, res)) {
@@ -252,12 +278,14 @@ export async function resetPassword(req, res) {
     if (!PASSWORD_REGEX.test(newPassword)) {
       return res.status(400).json({
         success: false,
-        message:
-          'Password must be at least 8 characters and include uppercase, lowercase, and special character',
+        message: 'Password must be at least 8 characters and include uppercase, lowercase, and special character',
       });
     }
 
-    const user = store.users.find((item) => item.email === normalizedEmail);
+    const user = await prisma.authIdentity.findUnique({
+      where: { email: normalizedEmail },
+    });
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -265,7 +293,7 @@ export async function resetPassword(req, res) {
       });
     }
 
-    const isValid = verifyOTP(normalizedEmail, otp, 'reset');
+    const isValid = await verifyOTP(user.id, otp, 'reset');
     if (!isValid) {
       return res.status(400).json({
         success: false,
@@ -273,13 +301,18 @@ export async function resetPassword(req, res) {
       });
     }
 
-    user.password = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await prisma.authIdentity.update({
+      where: { id: user.id },
+      data: { passwordHash: hashedPassword },
+    });
 
     return res.status(200).json({
       success: true,
       message: 'Password reset successful',
     });
   } catch (error) {
+    console.error('[ResetPassword Error]:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal Server Error',
@@ -289,12 +322,8 @@ export async function resetPassword(req, res) {
 
 /**
  * Resends OTP for the given email and type.
- *
- * @param {import('express').Request} req - Express request object.
- * @param {import('express').Response} res - Express response object.
- * @returns {import('express').Response | void} HTTP response.
  */
-export function resendOtp(req, res) {
+export async function resendOtp(req, res) {
   if (handleValidationErrors(req, res)) {
     return;
   }
@@ -303,18 +332,37 @@ export function resendOtp(req, res) {
     const { email, type } = req.body;
     const normalizedEmail = email.toLowerCase();
 
-    store.otps = store.otps.filter(
-      (item) => !(item.email === normalizedEmail && item.type === type),
-    );
+    const user = await prisma.authIdentity.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    const formattedPurpose = type.toUpperCase() === 'RESET' ? 'PASSWORD_RESET' : 'SIGNUP';
+
+    // Delete existing unused OTPs of this type for the user
+    await prisma.otpVerification.deleteMany({
+      where: {
+        authIdentityId: user.id,
+        purpose: formattedPurpose,
+        isUsed: false,
+      },
+    });
 
     const otp = generateOTP();
-    storeOTP(normalizedEmail, otp, type);
+    await storeOTP(user.id, otp, type);
 
     return res.status(200).json({
       success: true,
       message: 'OTP resent',
     });
   } catch (error) {
+    console.error('[ResendOtp Error]:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal Server Error',
