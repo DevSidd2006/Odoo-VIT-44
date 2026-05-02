@@ -73,6 +73,7 @@ export async function signup(req, res) {
         email: normalizedEmail,
         passwordHash: hashedPassword,
         roleId: role.id,
+        isVerified: true, // DEMO MODE: Automatically verify user
         userProfile: {
           create: {
             fullName,
@@ -81,8 +82,8 @@ export async function signup(req, res) {
       },
     });
 
-    // 4. Generate and store OTP
-    const otp = generateOTP();
+    // 4. Generate and store OTP (still creating it for database consistency)
+    const otp = '000000'; // DEMO MODE: Static OTP
     await storeOTP(user.id, otp, 'signup');
 
     await sendEmail(
