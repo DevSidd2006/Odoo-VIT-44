@@ -3,6 +3,14 @@ import { store } from '../store/index.js';
 const ALLOWED_ROLES = ['customer', 'organiser', 'admin'];
 
 /**
+ * Get today's date in YYYY-MM-DD format
+ */
+function startOfToday() {
+  const now = new Date();
+  return now.toISOString().split('T')[0];
+}
+
+/**
  * Removes sensitive fields from user object.
  *
  * @param {object} user - User object from in-memory store.
@@ -173,6 +181,73 @@ export function updateUserRole(req, res) {
     return res.status(500).json({
       success: false,
       message: 'Internal Server Error',
+    });
+  }
+}
+
+/**
+ * Returns dashboard statistics for admin.
+ *
+ * @param {import('express').Request} req - Express request object.
+ * @param {import('express').Response} res - Express response object.
+ * @returns {import('express').Response} HTTP response.
+ */
+export function getDashboardStats(req, res) {
+  try {
+    const today = startOfToday();
+
+    const totalUsers = store.users.length;
+    const totalOrganisers = store.users.filter(
+      (u) => u.role === 'organiser'
+    ).length;
+    const totalCustomers = store.users.filter(
+      (u) => u.role === 'customer'
+    ).length;
+
+    const totalAppointmentTypes = store.appointmentTypes.length;
+    const publishedAppointmentTypes = store.appointmentTypes.filter(
+      (at) => at.isPublished === true
+    ).length;
+
+    const totalBookings = store.bookings.length;
+    const pendingBookings = store.bookings.filter(
+      (b) => b.status === 'pending'
+    ).length;
+    const confirmedBookings = store.bookings.filter(
+      (b) => b.status === 'confirmed'
+    ).length;
+    const cancelledBookings = store.bookings.filter(
+      (b) => b.status === 'cancelled'
+    ).length;
+    const todayBookings = store.bookings.filter(
+      (b) => b.date === today
+    ).length;
+
+    const totalResources = store.resources.length;
+
+    const stats = {
+      totalUsers,
+      totalOrganisers,
+      totalCustomers,
+      totalAppointmentTypes,
+      publishedAppointmentTypes,
+      totalBookings,
+      pendingBookings,
+      confirmedBookings,
+      cancelledBookings,
+      todayBookings,
+      totalResources,
+    };
+
+    return res.json({
+      success: true,
+      stats,
+    });
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching dashboard stats',
     });
   }
 }

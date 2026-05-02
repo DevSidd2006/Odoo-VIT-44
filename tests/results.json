@@ -1,0 +1,959 @@
+{
+  "runAt": "2026-05-02T09:40:09.752Z",
+  "totalDuration": 285,
+  "summary": {
+    "total": 47,
+    "passed": 1,
+    "failed": 46
+  },
+  "modules": [
+    {
+      "name": "Auth",
+      "tests": [
+        {
+          "module": "Auth",
+          "name": "POST /api/auth/signup",
+          "method": "POST",
+          "url": "http://localhost:3000/api/auth/signup",
+          "headers": "{}",
+          "body": {},
+          "expectedStatus": 201,
+          "result": {
+            "status": 409,
+            "body": {
+              "success": false,
+              "message": "Email already registered"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 2
+          }
+        },
+        {
+          "module": "Auth",
+          "name": "POST /api/auth/verify-otp",
+          "method": "POST",
+          "url": "http://localhost:3000/api/auth/verify-otp",
+          "headers": "{}",
+          "body": {},
+          "expectedStatus": 200,
+          "result": {
+            "status": 400,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired OTP"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        },
+        {
+          "module": "Auth",
+          "name": "POST /api/auth/login",
+          "method": "POST",
+          "url": "http://localhost:3000/api/auth/login",
+          "headers": "{}",
+          "body": {},
+          "expectedStatus": 200,
+          "result": {
+            "status": 403,
+            "body": {
+              "success": false,
+              "message": "Please verify your email first"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 50
+          }
+        },
+        {
+          "module": "Auth",
+          "name": "POST /api/auth/forgot-password",
+          "method": "POST",
+          "url": "http://localhost:3000/api/auth/forgot-password",
+          "headers": "{}",
+          "body": {},
+          "expectedStatus": 200,
+          "result": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "message": "Reset OTP sent if email exists"
+            },
+            "passed": true,
+            "error": null,
+            "durationMs": 2
+          }
+        },
+        {
+          "module": "Auth",
+          "name": "POST /api/auth/reset-password",
+          "method": "POST",
+          "url": "http://localhost:3000/api/auth/reset-password",
+          "headers": "{}",
+          "body": {},
+          "expectedStatus": 200,
+          "result": {
+            "status": 400,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired OTP"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 0
+          }
+        },
+        {
+          "module": "Auth",
+          "name": "POST /api/auth/resend-otp",
+          "method": "POST",
+          "url": "http://localhost:3000/api/auth/resend-otp",
+          "headers": "{}",
+          "body": {},
+          "expectedStatus": 200,
+          "result": {
+            "status": 400,
+            "body": {
+              "success": false,
+              "message": "Type must be signup or reset"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "User",
+      "tests": [
+        {
+          "module": "User",
+          "name": "GET /api/users/me",
+          "method": "GET",
+          "url": "http://localhost:3000/api/users/me",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": null,
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        },
+        {
+          "module": "User",
+          "name": "PUT /api/users/me",
+          "method": "PUT",
+          "url": "http://localhost:3000/api/users/me",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": {},
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        },
+        {
+          "module": "User",
+          "name": "GET /api/users/me/appointments",
+          "method": "GET",
+          "url": "http://localhost:3000/api/users/me/appointments",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": null,
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "tests": [
+        {
+          "module": "Admin",
+          "name": "GET /api/admin/users",
+          "method": "GET",
+          "url": "http://localhost:3000/api/admin/users",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": null,
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 0
+          }
+        },
+        {
+          "module": "Admin",
+          "name": "PUT /api/admin/users/:id/status",
+          "method": "PUT",
+          "url": "http://localhost:3000/api/admin/users/:id/status",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": {},
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        },
+        {
+          "module": "Admin",
+          "name": "PUT /api/admin/users/:id/role",
+          "method": "PUT",
+          "url": "http://localhost:3000/api/admin/users/:id/role",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": {},
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        },
+        {
+          "module": "Admin",
+          "name": "GET /api/admin/dashboard",
+          "method": "GET",
+          "url": "http://localhost:3000/api/admin/dashboard",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": null,
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "AppointmentType",
+      "tests": [
+        {
+          "module": "AppointmentType",
+          "name": "POST /api/appointment-types",
+          "method": "POST",
+          "url": "http://localhost:3000/api/appointment-types",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": {},
+          "expectedStatus": 201,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        },
+        {
+          "module": "AppointmentType",
+          "name": "GET /api/appointment-types",
+          "method": "GET",
+          "url": "http://localhost:3000/api/appointment-types",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": null,
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 0
+          }
+        },
+        {
+          "module": "AppointmentType",
+          "name": "GET /api/appointment-types/:id",
+          "method": "GET",
+          "url": "http://localhost:3000/api/appointment-types/:id",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": null,
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        },
+        {
+          "module": "AppointmentType",
+          "name": "PUT /api/appointment-types/:id",
+          "method": "PUT",
+          "url": "http://localhost:3000/api/appointment-types/:id",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": {},
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        },
+        {
+          "module": "AppointmentType",
+          "name": "POST /api/appointment-types/:id/publish",
+          "method": "POST",
+          "url": "http://localhost:3000/api/appointment-types/:id/publish",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": {},
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 0
+          }
+        },
+        {
+          "module": "AppointmentType",
+          "name": "POST /api/appointment-types/:id/unpublish",
+          "method": "POST",
+          "url": "http://localhost:3000/api/appointment-types/:id/unpublish",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": {},
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        },
+        {
+          "module": "AppointmentType",
+          "name": "GET /api/appointment-types/:id/share-link",
+          "method": "GET",
+          "url": "http://localhost:3000/api/appointment-types/:id/share-link",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": null,
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 0
+          }
+        },
+        {
+          "module": "AppointmentType",
+          "name": "GET /api/appointment-types/:id/preview",
+          "method": "GET",
+          "url": "http://localhost:3000/api/appointment-types/:id/preview",
+          "headers": "{}",
+          "body": null,
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Unauthorized"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        },
+        {
+          "module": "AppointmentType",
+          "name": "DELETE /api/appointment-types/:id",
+          "method": "DELETE",
+          "url": "http://localhost:3000/api/appointment-types/:id",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": null,
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "Schedule",
+      "tests": [
+        {
+          "module": "Schedule",
+          "name": "PUT /api/appointment-types/:id/schedule",
+          "method": "PUT",
+          "url": "http://localhost:3000/api/appointment-types/:id/schedule",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": {},
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        },
+        {
+          "module": "Schedule",
+          "name": "GET /api/appointment-types/:id/schedule",
+          "method": "GET",
+          "url": "http://localhost:3000/api/appointment-types/:id/schedule",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": null,
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Resource",
+      "tests": [
+        {
+          "module": "Resource",
+          "name": "POST /api/resources",
+          "method": "POST",
+          "url": "http://localhost:3000/api/resources",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": {},
+          "expectedStatus": 201,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 0
+          }
+        },
+        {
+          "module": "Resource",
+          "name": "GET /api/resources",
+          "method": "GET",
+          "url": "http://localhost:3000/api/resources",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": null,
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        },
+        {
+          "module": "Resource",
+          "name": "GET /api/resources/:id",
+          "method": "GET",
+          "url": "http://localhost:3000/api/resources/:id",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": null,
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 0
+          }
+        },
+        {
+          "module": "Resource",
+          "name": "PUT /api/resources/:id",
+          "method": "PUT",
+          "url": "http://localhost:3000/api/resources/:id",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": {},
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        },
+        {
+          "module": "Resource",
+          "name": "DELETE /api/resources/:id",
+          "method": "DELETE",
+          "url": "http://localhost:3000/api/resources/:id",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": null,
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "Question",
+      "tests": [
+        {
+          "module": "Question",
+          "name": "POST /api/appointment-types/:id/questions",
+          "method": "POST",
+          "url": "http://localhost:3000/api/appointment-types/:id/questions",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": {},
+          "expectedStatus": 201,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 0
+          }
+        },
+        {
+          "module": "Question",
+          "name": "GET /api/appointment-types/:id/questions",
+          "method": "GET",
+          "url": "http://localhost:3000/api/appointment-types/:id/questions",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": null,
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        },
+        {
+          "module": "Question",
+          "name": "PUT /api/appointment-types/:id/questions/:qid",
+          "method": "PUT",
+          "url": "http://localhost:3000/api/appointment-types/:id/questions/:qid",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": {},
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        },
+        {
+          "module": "Question",
+          "name": "DELETE /api/appointment-types/:id/questions/:qid",
+          "method": "DELETE",
+          "url": "http://localhost:3000/api/appointment-types/:id/questions/:qid",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": null,
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "BookingRules",
+      "tests": [
+        {
+          "module": "BookingRules",
+          "name": "PUT /api/appointment-types/:id/rules",
+          "method": "PUT",
+          "url": "http://localhost:3000/api/appointment-types/:id/rules",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": {},
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        },
+        {
+          "module": "BookingRules",
+          "name": "GET /api/appointment-types/:id/rules",
+          "method": "GET",
+          "url": "http://localhost:3000/api/appointment-types/:id/rules",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": null,
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "Slot",
+      "tests": [
+        {
+          "module": "Slot",
+          "name": "GET /api/appointment-types/:id/slots",
+          "method": "GET",
+          "url": "http://localhost:3000/api/appointment-types/:id/slots?date=...",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": null,
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        },
+        {
+          "module": "Slot",
+          "name": "POST /api/appointment-types/:id/slots",
+          "method": "POST",
+          "url": "http://localhost:3000/api/appointment-types/:id/slots",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": {},
+          "expectedStatus": 201,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "Booking",
+      "tests": [
+        {
+          "module": "Booking",
+          "name": "POST /api/bookings",
+          "method": "POST",
+          "url": "http://localhost:3000/api/bookings",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": {},
+          "expectedStatus": 201,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        },
+        {
+          "module": "Booking",
+          "name": "GET /api/bookings",
+          "method": "GET",
+          "url": "http://localhost:3000/api/bookings",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": null,
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 0
+          }
+        },
+        {
+          "module": "Booking",
+          "name": "GET /api/bookings/my",
+          "method": "GET",
+          "url": "http://localhost:3000/api/bookings/my",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": null,
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        },
+        {
+          "module": "Booking",
+          "name": "GET /api/bookings/:id",
+          "method": "GET",
+          "url": "http://localhost:3000/api/bookings/:id",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": null,
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 0
+          }
+        },
+        {
+          "module": "Booking",
+          "name": "PUT /api/bookings/:id/confirm",
+          "method": "PUT",
+          "url": "http://localhost:3000/api/bookings/:id/confirm",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": {},
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        },
+        {
+          "module": "Booking",
+          "name": "PUT /api/bookings/:id/reschedule",
+          "method": "PUT",
+          "url": "http://localhost:3000/api/bookings/:id/reschedule",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": {},
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 0
+          }
+        },
+        {
+          "module": "Booking",
+          "name": "PUT /api/bookings/:id/cancel",
+          "method": "PUT",
+          "url": "http://localhost:3000/api/bookings/:id/cancel",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": {},
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "tests": [
+        {
+          "module": "Reports",
+          "name": "GET /api/reports/total-appointments",
+          "method": "GET",
+          "url": "http://localhost:3000/api/reports/total-appointments",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": null,
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 0
+          }
+        },
+        {
+          "module": "Reports",
+          "name": "GET /api/reports/peak-hours",
+          "method": "GET",
+          "url": "http://localhost:3000/api/reports/peak-hours",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": null,
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 1
+          }
+        },
+        {
+          "module": "Reports",
+          "name": "GET /api/reports/provider-utilization",
+          "method": "GET",
+          "url": "http://localhost:3000/api/reports/provider-utilization",
+          "headers": "{ Authorization: Bearer ... }",
+          "body": null,
+          "expectedStatus": 200,
+          "result": {
+            "status": 401,
+            "body": {
+              "success": false,
+              "message": "Invalid or expired token"
+            },
+            "passed": false,
+            "error": null,
+            "durationMs": 0
+          }
+        }
+      ]
+    }
+  ]
+}

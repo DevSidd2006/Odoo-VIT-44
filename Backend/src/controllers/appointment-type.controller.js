@@ -24,6 +24,23 @@ const WEEKLY_DAYS = new Set([
   'sunday',
 ]);
 const ALLOWED_SCHEDULE_TYPES = ['weekly', 'flexible'];
+const ALLOWED_QUESTION_ANSWER_TYPES = [
+  'single_line_text',
+  'multi_line_text',
+  'phone_number',
+  'radio',
+  'checkboxes',
+];
+const ALLOWED_SLOT_CREATION_TYPES = ['auto', 'manual'];
+const DEFAULT_BOOKING_RULES = {
+  maxBookingsPerSlot: 1,
+  manualConfirmation: false,
+  advancePayment: false,
+  paymentFee: 0,
+  paymentCapacityPercent: 100,
+  slotCreationType: 'auto',
+  cancellationCutoffHours: 0,
+};
 
 /**
  * Builds today's date at midnight for date-only comparisons.
@@ -86,6 +103,115 @@ function canManageAppointmentType(user, appointmentType) {
  */
 function findAppointmentType(id) {
   return store.appointmentTypes.find((item) => item.id === id);
+}
+
+/**
+ * Returns questions for a specific appointment type sorted by order.
+ *
+ * @param {string} appointmentTypeId - Appointment type id.
+ * @returns {Array<object>} Sorted questions.
+ */
+function getQuestionsForAppointmentType(appointmentTypeId) {
+  return store.questions
+    .filter((item) => item.appointmentTypeId === appointmentTypeId)
+    .sort((left, right) => left.order - right.order);
+}
+
+/**
+ * Replaces all questions for an appointment type with a normalized ordered list.
+ *
+ * @param {string} appointmentTypeId - Appointment type id.
+ * @param {Array<object>} questions - Ordered questions.
+ * @returns {void}
+ */
+function replaceQuestionsForAppointmentType(appointmentTypeId, questions) {
+  const remainingQuestions = store.questions.filter(
+    (item) => item.appointmentTypeId !== appointmentTypeId,
+  );
+
+  const normalizedQuestions = questions.map((question, index) => ({
+    ...question,
+    order: index + 1,
+  }));
+
+  store.questions = [...remainingQuestions, ...normalizedQuestions];
+}
+
+/**
+ * Returns booking rules for an appointment type or defaults when missing.
+ *
+ * @param {string} appointmentTypeId - Appointment type id.
+ * @returns {object} Booking rules payload.
+ */
+function getBookingRulesForAppointmentType(appointmentTypeId) {
+  const rules = store.bookingRules.find((item) => item.appointmentTypeId === appointmentTypeId);
+
+  if (!rules) {
+    return {
+      appointmentTypeId,
+      ...DEFAULT_BOOKING_RULES,
+    };
+  }
+
+  return {
+    appointmentTypeId,
+    ...DEFAULT_BOOKING_RULES,
+    ...rules,
+  };
+}
+
+/**
+ * Validates a booking rules payload.
+ *
+ * @param {object} rules - Booking rules payload.
+ * @returns {{valid:boolean,message?:string}} Validation result.
+ */
+function validateBookingRules(rules) {
+  const {
+    maxBookingsPerSlot,
+    manualConfirmation,
+    advancePayment,
+    paymentFee,
+    paymentCapacityPercent,
+    slotCreationType,
+    cancellationCutoffHours,
+  } = rules || {};
+
+  if (maxBookingsPerSlot !== undefined && (!Number.isInteger(maxBookingsPerSlot) || maxBookingsPerSlot <= 0)) {
+    return { valid: false, message: 'maxBookingsPerSlot must be a positive integer' };
+  }
+
+  if (manualConfirmation !== undefined && typeof manualConfirmation !== 'boolean') {
+    return { valid: false, message: 'manualConfirmation must be a boolean' };
+  }
+
+  if (advancePayment !== undefined && typeof advancePayment !== 'boolean') {
+    return { valid: false, message: 'advancePayment must be a boolean' };
+  }
+
+  if (paymentFee !== undefined && (typeof paymentFee !== 'number' || Number.isNaN(paymentFee) || paymentFee < 0)) {
+    return { valid: false, message: 'paymentFee must be a non-negative number' };
+  }
+
+  if (
+    paymentCapacityPercent !== undefined &&
+    (typeof paymentCapacityPercent !== 'number' || Number.isNaN(paymentCapacityPercent) || paymentCapacityPercent <= 0 || paymentCapacityPercent > 100)
+  ) {
+    return { valid: false, message: 'paymentCapacityPercent must be between 1 and 100' };
+  }
+
+  if (slotCreationType !== undefined && !ALLOWED_SLOT_CREATION_TYPES.includes(slotCreationType)) {
+    return { valid: false, message: 'slotCreationType must be auto or manual' };
+  }
+
+  if (
+    cancellationCutoffHours !== undefined &&
+    (typeof cancellationCutoffHours !== 'number' || Number.isNaN(cancellationCutoffHours) || cancellationCutoffHours < 0)
+  ) {
+    return { valid: false, message: 'cancellationCutoffHours must be a non-negative number' };
+  }
+
+  return { valid: true };
 }
 
 /**
@@ -893,6 +1019,373 @@ export function getAppointmentTypeSchedule(req, res) {
     return res.status(200).json({
       success: true,
       schedule,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Internal Server Error',
+    });
+  }
+}
+
+/**
+ * Creates a new question for an appointment type.
+ *
+ * @param {import('express').Request} req - Express request object.
+ * @param {import('express').Response} res - Express response object.
+ * @returns {import('express').Response} HTTP response.
+ */
+export function createAppointmentTypeQuestion(req, res) {
+  try {
+    const appointmentType = findAppointmentType(req.params.id);
+
+    if (!appointmentType) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment type not found',
+      });
+    }
+
+    if (!canManageAppointmentType(req.user, appointmentType)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment type not found',
+      });
+    }
+
+    const { question, answerType, mandatory } = req.body;
+
+    if (typeof question !== 'string' || question.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'question is required',
+      });
+    }
+
+    if (!ALLOWED_QUESTION_ANSWER_TYPES.includes(answerType)) {
+      return res.status(400).json({
+        success: false,
+        message: 'answerType is invalid',
+      });
+    }
+
+    if (mandatory !== undefined && typeof mandatory !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: 'mandatory must be a boolean',
+      });
+    }
+
+    const maxOrder = getQuestionsForAppointmentType(appointmentType.id).reduce(
+      (max, item) => Math.max(max, item.order || 0),
+      0,
+    );
+
+    const newQuestion = {
+      id: uuidv4(),
+      appointmentTypeId: appointmentType.id,
+      question: question.trim(),
+      answerType,
+      mandatory: mandatory ?? false,
+      order: maxOrder + 1,
+      createdAt: new Date(),
+    };
+
+    store.questions.push(newQuestion);
+
+    return res.status(201).json({
+      success: true,
+      question: newQuestion,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Internal Server Error',
+    });
+  }
+}
+
+/**
+ * Returns questions for an appointment type.
+ *
+ * @param {import('express').Request} req - Express request object.
+ * @param {import('express').Response} res - Express response object.
+ * @returns {import('express').Response} HTTP response.
+ */
+export function listAppointmentTypeQuestions(req, res) {
+  try {
+    const appointmentType = findAppointmentType(req.params.id);
+
+    if (!appointmentType || !canAccessAppointmentType(req.user, appointmentType)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment type not found',
+      });
+    }
+
+    const questions = getQuestionsForAppointmentType(appointmentType.id);
+
+    return res.status(200).json({
+      success: true,
+      questions,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Internal Server Error',
+    });
+  }
+}
+
+/**
+ * Updates a question for an appointment type.
+ *
+ * @param {import('express').Request} req - Express request object.
+ * @param {import('express').Response} res - Express response object.
+ * @returns {import('express').Response} HTTP response.
+ */
+export function updateAppointmentTypeQuestion(req, res) {
+  try {
+    const appointmentType = findAppointmentType(req.params.id);
+
+    if (!appointmentType) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment type not found',
+      });
+    }
+
+    if (!canManageAppointmentType(req.user, appointmentType)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment type not found',
+      });
+    }
+
+    const existingQuestion = store.questions.find(
+      (item) => item.id === req.params.qid && item.appointmentTypeId === appointmentType.id,
+    );
+
+    if (!existingQuestion) {
+      return res.status(404).json({
+        success: false,
+        message: 'Question not found',
+      });
+    }
+
+    const allowedFields = new Set(['question', 'answerType', 'mandatory', 'order']);
+    const entries = Object.entries(req.body || {});
+    for (const [key] of entries) {
+      if (!allowedFields.has(key)) {
+        return res.status(400).json({
+          success: false,
+          message: `Field ${key} cannot be updated`,
+        });
+      }
+    }
+
+    const { question, answerType, mandatory, order } = req.body;
+
+    if (question !== undefined && (typeof question !== 'string' || question.trim().length === 0)) {
+      return res.status(400).json({
+        success: false,
+        message: 'question must be a non-empty string',
+      });
+    }
+
+    if (answerType !== undefined && !ALLOWED_QUESTION_ANSWER_TYPES.includes(answerType)) {
+      return res.status(400).json({
+        success: false,
+        message: 'answerType is invalid',
+      });
+    }
+
+    if (mandatory !== undefined && typeof mandatory !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: 'mandatory must be a boolean',
+      });
+    }
+
+    if (order !== undefined && (!Number.isInteger(order) || order <= 0)) {
+      return res.status(400).json({
+        success: false,
+        message: 'order must be a positive integer',
+      });
+    }
+
+    const updatedQuestion = {
+      ...existingQuestion,
+      ...(question !== undefined ? { question: question.trim() } : {}),
+      ...(answerType !== undefined ? { answerType } : {}),
+      ...(mandatory !== undefined ? { mandatory } : {}),
+    };
+
+    const orderedQuestions = getQuestionsForAppointmentType(appointmentType.id).filter(
+      (item) => item.id !== existingQuestion.id,
+    );
+
+    const targetOrder = Math.min(order ?? existingQuestion.order, orderedQuestions.length + 1);
+    orderedQuestions.splice(targetOrder - 1, 0, updatedQuestion);
+
+    replaceQuestionsForAppointmentType(appointmentType.id, orderedQuestions);
+    const finalQuestion = orderedQuestions.map((item, index) => ({
+      ...item,
+      order: index + 1,
+    }))[targetOrder - 1];
+
+    return res.status(200).json({
+      success: true,
+      question: finalQuestion,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Internal Server Error',
+    });
+  }
+}
+
+/**
+ * Deletes a question and normalizes remaining order.
+ *
+ * @param {import('express').Request} req - Express request object.
+ * @param {import('express').Response} res - Express response object.
+ * @returns {import('express').Response} HTTP response.
+ */
+export function deleteAppointmentTypeQuestion(req, res) {
+  try {
+    const appointmentType = findAppointmentType(req.params.id);
+
+    if (!appointmentType) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment type not found',
+      });
+    }
+
+    if (!canManageAppointmentType(req.user, appointmentType)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment type not found',
+      });
+    }
+
+    const existingQuestion = store.questions.find(
+      (item) => item.id === req.params.qid && item.appointmentTypeId === appointmentType.id,
+    );
+
+    if (!existingQuestion) {
+      return res.status(404).json({
+        success: false,
+        message: 'Question not found',
+      });
+    }
+
+    const remainingQuestions = getQuestionsForAppointmentType(appointmentType.id).filter(
+      (item) => item.id !== existingQuestion.id,
+    );
+
+    replaceQuestionsForAppointmentType(appointmentType.id, remainingQuestions);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Question deleted',
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Internal Server Error',
+    });
+  }
+}
+
+/**
+ * Upserts booking rules for an appointment type.
+ *
+ * @param {import('express').Request} req - Express request object.
+ * @param {import('express').Response} res - Express response object.
+ * @returns {import('express').Response} HTTP response.
+ */
+export function upsertBookingRules(req, res) {
+  try {
+    const appointmentType = findAppointmentType(req.params.id);
+
+    if (!appointmentType) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment type not found',
+      });
+    }
+
+    if (!canManageAppointmentType(req.user, appointmentType)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment type not found',
+      });
+    }
+
+    const validation = validateBookingRules(req.body);
+    if (!validation.valid) {
+      return res.status(400).json({
+        success: false,
+        message: validation.message,
+      });
+    }
+
+    const existingRulesIndex = store.bookingRules.findIndex(
+      (item) => item.appointmentTypeId === appointmentType.id,
+    );
+
+    const currentRules = getBookingRulesForAppointmentType(appointmentType.id);
+    const nextRules = {
+      appointmentTypeId: appointmentType.id,
+      ...DEFAULT_BOOKING_RULES,
+      ...currentRules,
+      ...req.body,
+    };
+
+    if (existingRulesIndex >= 0) {
+      store.bookingRules[existingRulesIndex] = nextRules;
+    } else {
+      store.bookingRules.push(nextRules);
+    }
+
+    return res.status(200).json({
+      success: true,
+      rules: nextRules,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Internal Server Error',
+    });
+  }
+}
+
+/**
+ * Returns booking rules for an appointment type.
+ *
+ * @param {import('express').Request} req - Express request object.
+ * @param {import('express').Response} res - Express response object.
+ * @returns {import('express').Response} HTTP response.
+ */
+export function getBookingRules(req, res) {
+  try {
+    const appointmentType = findAppointmentType(req.params.id);
+
+    if (!appointmentType) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment type not found',
+      });
+    }
+
+    const rules = getBookingRulesForAppointmentType(appointmentType.id);
+
+    return res.status(200).json({
+      success: true,
+      rules,
     });
   } catch (error) {
     return res.status(500).json({
