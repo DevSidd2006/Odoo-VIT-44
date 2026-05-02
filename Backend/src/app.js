@@ -8,6 +8,9 @@ import userRoutes from './routes/user.routes.js';
 import bookingRoutes from './routes/booking.routes.js';
 import reportRoutes from './routes/report.routes.js';
 import { store } from './store/index.js';
+import servicesRoutes from './routes/services.routes.js';
+import appointmentsRoutes from './routes/appointments.routes.js';
+import profileRoutes from './routes/profile.routes.js';
 
 const app = express();
 
@@ -61,8 +64,13 @@ apiRouter.use('/admin', adminRoutes);
 apiRouter.use('/appointment-types', appointmentTypeRoutes);
 apiRouter.use('/resources', resourceRoutes);
 apiRouter.use('/users', userRoutes);
+
 apiRouter.use('/bookings', bookingRoutes);
 apiRouter.use('/reports', reportRoutes);
+apiRouter.use('/services', servicesRoutes);
+apiRouter.use('/appointments', appointmentsRoutes);
+apiRouter.use('/profile', profileRoutes);
+
 
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;

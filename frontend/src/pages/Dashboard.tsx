@@ -1,9 +1,24 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    // 1. Get user from local storage
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) setUser(JSON.parse(storedUser));
+
+    // 2. Fetch services
+    axios.get('http://localhost:3000/api/services')
+      .then(res => setCategories(res.data.data))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -11,60 +26,73 @@ const Dashboard: React.FC = () => {
     navigate('/login');
   };
 
-  const appointments = [
-    { id: 1, doctor: 'Dr. Sarah Johnson', specialty: 'Cardiologist', date: 'May 15, 2024', time: '10:00 AM', status: 'Upcoming' },
-    { id: 2, doctor: 'Dr. Michael Chen', specialty: 'General Practitioner', date: 'May 10, 2024', time: '2:30 PM', status: 'Completed' },
-  ];
-
-  const doctors = [
-    { id: 1, name: 'Dr. Sarah Johnson', specialty: 'Cardiologist', availability: 'Next: tomorrow' },
-    { id: 2, name: 'Dr. Michael Chen', specialty: 'Pediatrician', availability: 'Next: today' },
-    { id: 3, name: 'Dr. Emily White', specialty: 'Dermatologist', availability: 'Next: Mon, May 12' },
-  ];
-
   return (
-    <div className="dashboard-container">
-      <header className="header">
-        <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Clinic Appointment Portal</h1>
-          <p style={{ color: 'var(--secondary)', fontSize: '0.875rem' }}>Welcome back, {user.fullName || 'User'}</p>
+    <div className="app-container animate-fade-in">
+      {/* Premium Navbar */}
+      <nav className="nav-bar">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ width: '40px', height: '40px', background: 'var(--accent)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>A</div>
+          <span style={{ fontSize: '1.25rem', fontWeight: 700 }}>Appointly</span>
         </div>
-        <button onClick={handleLogout} className="auth-link" style={{ fontSize: '0.875rem', cursor: 'pointer', background: 'none', border: 'none' }}>Logout</button>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <Link to="/profile" className="button button-outline" style={{ fontSize: '0.875rem' }}>My Profile</Link>
+          <button onClick={handleLogout} className="button" style={{ background: '#ef4444', fontSize: '0.875rem' }}>Logout</button>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <header style={{ marginBottom: '4rem', textAlign: 'center' }}>
+        <h1 style={{ fontSize: '3.5rem', marginBottom: '1rem' }} className="text-gradient">
+          Book your next <br /> appointment in seconds.
+        </h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: '1.125rem', maxWidth: '600px', margin: '0 auto' }}>
+          Welcome back, {user?.fullName || 'User'}. Explore our professional services and schedule your visit with ease.
+        </p>
       </header>
 
-      <div style={{ marginBottom: '3rem' }}>
-        <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem' }}>Your Appointments</h2>
-        <div className="grid">
-          {appointments.map((apt) => (
-            <div key={apt.id} className="card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <span className={`badge ${apt.status === 'Upcoming' ? 'badge-blue' : 'badge-green'}`}>{apt.status}</span>
-                <span style={{ color: 'var(--secondary)', fontSize: '0.75rem' }}>{apt.date}</span>
-              </div>
-              <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>{apt.doctor}</h3>
-              <p style={{ color: 'var(--secondary)', fontSize: '0.875rem', marginBottom: '1rem' }}>{apt.specialty}</p>
-              <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{apt.time}</div>
-            </div>
-          ))}
-          {appointments.length === 0 && (
-            <p style={{ color: 'var(--secondary)', gridColumn: '1/-1', textAlign: 'center', padding: '2rem' }}>No appointments found.</p>
-          )}
+      {/* Services Grid */}
+      <section>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <h2 style={{ fontSize: '1.5rem' }}>Our Services</h2>
+          <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{categories.reduce((acc, cat) => acc + cat.services.length, 0)} Services Available</div>
         </div>
-      </div>
 
-      <div>
-        <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem' }}>Available Doctors</h2>
-        <div className="grid">
-          {doctors.map((doc) => (
-            <div key={doc.id} className="card">
-              <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>{doc.name}</h3>
-              <p style={{ color: 'var(--secondary)', fontSize: '0.875rem', marginBottom: '1rem' }}>{doc.specialty}</p>
-              <p style={{ fontSize: '0.75rem', color: 'var(--accent)', marginBottom: '1.5rem' }}>{doc.availability}</p>
-              <button className="button">Book Appointment</button>
-            </div>
-          ))}
-        </div>
-      </div>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '4rem' }}>Loading services...</div>
+        ) : categories.length === 0 ? (
+          <div className="glass-card" style={{ textAlign: 'center', padding: '4rem', borderStyle: 'dashed' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
+            <h3 style={{ marginBottom: '0.5rem' }}>No services available right now</h3>
+            <p style={{ color: 'var(--text-muted)' }}>Please check back later or run the seed script to add demo data.</p>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '2rem' }}>
+            {categories.map(category => (
+              category.services.map((service: any) => (
+                <div key={service.id} className="glass-card animate-fade-in" style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      {category.name}
+                    </span>
+                    <h3 style={{ fontSize: '1.25rem', marginTop: '0.25rem', marginBottom: '0.5rem' }}>{service.name}</h3>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', minHeight: '3rem' }}>{service.description}</p>
+                  </div>
+                  
+                  <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)', paddingTop: '1.25rem' }}>
+                    <div>
+                      <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>${service.price}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{service.duration} mins</div>
+                    </div>
+                    <button onClick={() => navigate(`/book/${service.id}`)} className="button">
+                      Book Now
+                    </button>
+                  </div>
+                </div>
+              ))
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 };

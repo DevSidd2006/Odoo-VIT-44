@@ -73,7 +73,7 @@ export async function signup(req, res) {
         email: normalizedEmail,
         passwordHash: hashedPassword,
         roleId: role.id,
-        isVerified: true, // DEMO MODE: Automatically verify user
+        isVerified: false, // Set to false so user has to verify via the OTP screen
         userProfile: {
           create: {
             fullName,
@@ -255,7 +255,7 @@ export async function forgotPassword(req, res) {
     });
 
     if (user) {
-      const otp = generateOTP();
+      const otp = '000000'; // DEMO MODE: Static OTP
       await storeOTP(user.id, otp, 'reset');
 
       await sendEmail(
@@ -370,7 +370,7 @@ export async function resendOtp(req, res) {
       },
     });
 
-    const otp = generateOTP();
+    const otp = '000000'; // DEMO MODE: Static OTP
     await storeOTP(user.id, otp, type);
 
     await sendEmail(
