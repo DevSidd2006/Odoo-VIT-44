@@ -1,6 +1,9 @@
 import express from 'express';
 import cors from 'cors';
+import appointmentTypeRoutes from './routes/appointment-type.routes.js';
 import authRoutes from './routes/auth.routes.js';
+import adminRoutes from './routes/admin.routes.js';
+import resourceRoutes from './routes/resource.routes.js';
 import userRoutes from './routes/user.routes.js';
 
 const app = express();
@@ -12,6 +15,9 @@ const apiRouter = express.Router();
 app.use('/api', apiRouter);
 
 apiRouter.use('/auth', authRoutes);
+apiRouter.use('/admin', adminRoutes);
+apiRouter.use('/appointment-types', appointmentTypeRoutes);
+apiRouter.use('/resources', resourceRoutes);
 apiRouter.use('/users', userRoutes);
 
 app.use((err, req, res, next) => {
