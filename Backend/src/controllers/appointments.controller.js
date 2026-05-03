@@ -2,26 +2,60 @@ import prisma from '../config/prisma.js';
 
 export async function bookAppointment(req, res) {
   try {
-    const { providerId, serviceId, slotId, startTime, endTime, capacity, responses } = req.body;
+    const { providerId, serviceId, slotId, startTime, endTime, responses } = req.body;
     
-    // For development/testing: find the first available user in the DB
-    const user = await prisma.authIdentity.findFirst();
+    // Validate dates
+    const appointmentStartTime = new Date(startTime);
+    const appointmentEndTime = new Date(endTime);
+
+    if (isNaN(appointmentStartTime.getTime()) || isNaN(appointmentEndTime.getTime())) {
+      return res.status(400).json({ success: false, message: 'Invalid startTime or endTime' });
+    }
+
+    // Check if user is authenticated (mocking for now, ideally req.user.id)
+    const user = await prisma.authIdentity.findFirst({
+      where: { role: { roleName: 'CUSTOMER' } }
+    });
     const customerId = user ? user.id : 1; 
 
-    // Create appointment
+    const service = await prisma.service.findUnique({
+      where: { id: parseInt(serviceId) }
+    });
+
+    if (!service) {
+      return res.status(404).json({ success: false, message: 'Service not found' });
+    }
+
+    // Check if slot is already full
+    const existingBookings = await prisma.appointment.count({
+      where: {
+        slotId: parseInt(slotId),
+        startTime: appointmentStartTime,
+        status: { in: ['PENDING', 'CONFIRMED'] }
+      }
+    });
+
+    const slot = await prisma.scheduleSlot.findUnique({
+      where: { id: parseInt(slotId) }
+    });
+
+    if (!slot || existingBookings >= slot.capacity) {
+      return res.status(400).json({ success: false, message: 'Slot is no longer available' });
+    }
+
     const appointment = await prisma.appointment.create({
       data: {
         customerId,
-        providerId,
-        serviceId,
-        slotId,
-        startTime: new Date(startTime),
-        endTime: new Date(endTime),
-        totalPrice: 0, // Should be fetched from service
+        providerId: parseInt(providerId),
+        serviceId: parseInt(serviceId),
+        slotId: parseInt(slotId),
+        startTime: appointmentStartTime,
+        endTime: appointmentEndTime,
+        totalPrice: service.price,
         status: 'PENDING',
         responses: {
           create: responses?.map(r => ({
-            questionId: r.questionId,
+            questionId: parseInt(r.questionId),
             answer: r.answer,
           })) || []
         }
@@ -39,22 +73,28 @@ export async function rescheduleAppointment(req, res) {
   try {
     const { id } = req.params;
     const { newSlotId, newStartTime, newEndTime } = req.body;
-    const changedById = 1; // req.user.id
+    const changedById = 1;
+
+    const appointmentStartTime = new Date(newStartTime);
+    const appointmentEndTime = new Date(newEndTime);
+
+    if (isNaN(appointmentStartTime.getTime()) || isNaN(appointmentEndTime.getTime())) {
+      return res.status(400).json({ success: false, message: 'Invalid startTime or endTime' });
+    }
 
     const existingAppt = await prisma.appointment.findUnique({ where: { id: parseInt(id) } });
     if (!existingAppt) return res.status(404).json({ success: false, message: 'Not found' });
 
-    // Update appointment
     const updated = await prisma.appointment.update({
       where: { id: parseInt(id) },
       data: {
-        slotId: newSlotId,
-        startTime: new Date(newStartTime),
-        endTime: new Date(newEndTime),
+        slotId: parseInt(newSlotId),
+        startTime: appointmentStartTime,
+        endTime: appointmentEndTime,
         history: {
           create: {
             oldStartTime: existingAppt.startTime,
-            newStartTime: new Date(newStartTime),
+            newStartTime: appointmentStartTime,
             changedById,
             reason: 'Customer rescheduled',
           }
@@ -87,39 +127,58 @@ export async function cancelAppointment(req, res) {
 
 export async function getAvailability(req, res) {
   try {
-    const { providerId, serviceId, date } = req.query;
+    const { serviceId, providerId, date } = req.query;
     
-    // 1. Get all slots for this provider
-    const slots = await prisma.scheduleSlot.findMany({
-      where: {
-        plan: { providerId: parseInt(providerId) },
-        // Simple logic: filter by day of week if date is provided
-        dayOfWeek: date ? new Date(date).getDay() : undefined,
-      }
-    });
+    if (!date || !serviceId || !providerId) {
+      return res.status(400).json({ success: false, message: 'serviceId, providerId and date are required' });
+    }
 
-    // 2. Get existing appointments for these slots on this date
-    const existingAppointments = await prisma.appointment.findMany({
+    const bookingDate = new Date(date);
+    const dayOfWeek = bookingDate.getDay(); 
+
+    const plan = await prisma.availabilityPlan.findFirst({
       where: {
         providerId: parseInt(providerId),
-        startTime: {
-          gte: new Date(`${date}T00:00:00Z`),
-          lte: new Date(`${date}T23:59:59Z`),
-        },
-        status: { not: 'CANCELLED' }
+        isActive: true,
+      },
+      include: {
+        slots: {
+          where: {
+            OR: [
+              { dayOfWeek: dayOfWeek },
+              { specificDate: { equals: bookingDate } }
+            ],
+            isBlocked: false,
+          }
+        }
       }
     });
 
-    // 3. Mark slots as available or full
-    const availability = slots.map(slot => {
-      const appointmentsInSlot = existingAppointments.filter(a => a.slotId === slot.id);
+    if (!plan || !plan.slots.length) {
+      return res.status(200).json({ success: true, data: [] });
+    }
+
+    const slotsWithAvailability = await Promise.all(plan.slots.map(async slot => {
+      // Calculate specific DateTime for this slot on the requested date
+      const [hours, minutes] = slot.startTime.split(':');
+      const slotStartTime = new Date(date);
+      slotStartTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+      const bookedCount = await prisma.appointment.count({
+        where: {
+          slotId: slot.id,
+          startTime: slotStartTime,
+          status: { in: ['PENDING', 'CONFIRMED'] }
+        }
+      });
+
       return {
         ...slot,
-        isAvailable: appointmentsInSlot.length < slot.capacity && !slot.isBlocked
+        isAvailable: bookedCount < slot.capacity
       };
-    });
+    }));
 
-    res.status(200).json({ success: true, data: availability });
+    res.status(200).json({ success: true, data: slotsWithAvailability.sort((a, b) => a.startTime.localeCompare(b.startTime)) });
   } catch (error) {
     console.error('[GetAvailability Error]:', error);
     res.status(500).json({ success: false, message: 'Internal server error' });

@@ -121,7 +121,7 @@ const Profile: React.FC = () => {
             </div>
             <div className="form-group" style={{ marginBottom: '2rem' }}>
               <label className="label">Phone Number</label>
-              <input type="text" className="input" placeholder="+1 234 567 890" />
+              <input type="text" className="input" placeholder="+91 98765 43210" />
             </div>
             <button className="button">Save Changes</button>
           </div>

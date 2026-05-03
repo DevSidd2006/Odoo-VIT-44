@@ -100,25 +100,34 @@ model ServiceCategory {
 }
 
 model Service {
-  id          Int     @id @default(autoincrement())
-  categoryId  Int
-  providerId  Int
-  name        String
-  description String? @db.Text
-  duration    Int     @default(30)
-  price       Decimal @db.Decimal(10, 2)
-  location    String? // Meeting venue / clinic / office
-  isPublished Boolean @default(false)
+  id                      Int               @id @default(autoincrement())
+  categoryId              Int
+  providerId              Int
+  name                    String
+  description             String?           @db.Text
+  duration                Int               @default(30)
+  price                   Decimal           @db.Decimal(10, 2)
+  bufferTime              Int               @default(0)
+  isPublished             Boolean           @default(false)
+  
+  // Custom Settings
+  location                String?
+  introMessage            String?
+  confirmMessage          String?
+  manualConfirmation      Boolean           @default(false)
+  manageCapacity          Boolean           @default(false)
+  capacityLimit           Int               @default(1)
+  cancellationCutoffHours Int               @default(0)
 
-  category ServiceCategory @relation(fields: [categoryId], references: [id])
-  provider User            @relation(fields: [providerId], references: [id])
+  category                ServiceCategory   @relation(fields: [categoryId], references: [id])
+  provider                User              @relation(fields: [providerId], references: [id])
+  
+  slots                   ScheduleSlot[]
+  bookings                Booking[]
+  questions               BookingQuestion[]
 
-  slots     ScheduleSlot[]
-  bookings  Booking[]
-  questions BookingQuestion[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
 
   @@unique([providerId, name])
 }
@@ -127,27 +136,27 @@ model ScheduleSlot {
   id           Int          @id @default(autoincrement())
   serviceId    Int
   type         ScheduleType @default(WEEKLY)
-  dayOfWeek    Int? // 0-6
+  dayOfWeek    Int?         // 0-6
   specificDate DateTime?
-  startTime    String // HH:mm
-  endTime      String // HH:mm
+  startTime    String       // HH:mm
+  endTime      String       // HH:mm
   capacity     Int          @default(1)
   bookedCount  Int          @default(0)
-  isBlocked    Boolean      @default(false) // Manual blocking for holidays/maintenance
+  isBlocked    Boolean      @default(false)
 
-  service  Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  bookings Booking[]
+  service      Service      @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  bookings     Booking[]
 
-  createdAt DateTime @default(now())
+  createdAt    DateTime     @default(now())
 }
 
 model Booking {
-  id         Int           @id @default(autoincrement())
-  serviceId  Int
-  customerId Int
-  slotId     Int
-  status     BookingStatus @default(PENDING)
-  startTime  DateTime
+  id           Int           @id @default(autoincrement())
+  serviceId    Int
+  customerId   Int
+  slotId       Int
+  status       BookingStatus @default(PENDING)
+  startTime    DateTime
 
   service  Service      @relation(fields: [serviceId], references: [id])
   customer User         @relation(fields: [customerId], references: [id])

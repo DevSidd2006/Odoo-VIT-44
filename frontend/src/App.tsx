@@ -6,6 +6,8 @@ import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import BookAppointment from './pages/BookAppointment';
+import PreviewAppointment from './pages/PreviewAppointment';
+import PaymentPage from './pages/PaymentPage';
 import BookingConfirmation from './pages/BookingConfirmation';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ServiceEditor from './pages/admin/ServiceEditor';
@@ -23,7 +25,9 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/book/:serviceId" element={<BookAppointment />} />
+        <Route path="/preview/:id" element={<PreviewAppointment />} />
         <Route path="/confirmation" element={<BookingConfirmation />} />
+        <Route path="/payment/:appointmentId" element={<PaymentPage />} />
         
         {/* Admin Routes */}
         <Route path="/admin/dashboard" element={<AdminDashboard />} />

@@ -11,6 +11,7 @@ import { store } from './store/index.js';
 import servicesRoutes from './routes/services.routes.js';
 import appointmentsRoutes from './routes/appointments.routes.js';
 import profileRoutes from './routes/profile.routes.js';
+import paymentRoutes from './routes/payment.routes.js';
 
 const app = express();
 
@@ -70,6 +71,7 @@ apiRouter.use('/reports', reportRoutes);
 apiRouter.use('/services', servicesRoutes);
 apiRouter.use('/appointments', appointmentsRoutes);
 apiRouter.use('/profile', profileRoutes);
+apiRouter.use('/payments', paymentRoutes);
 
 
 app.use((err, req, res, next) => {

@@ -48,7 +48,7 @@ const Signup: React.FC = () => {
             <input
               type="text"
               className="input"
-              placeholder="John Doe"
+              placeholder="Rahul Sharma"
               value={formData.fullName}
               onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
               required

@@ -1,76 +1,56 @@
-import { store } from '../store/index.js';
+import prisma from '../config/prisma.js';
 
 const ALLOWED_ROLES = ['customer', 'organiser', 'admin'];
 
 /**
- * Get today's date in YYYY-MM-DD format
+ * Removes sensitive fields from authIdentity object and combines with profile.
  */
-function startOfToday() {
-  const now = new Date();
-  return now.toISOString().split('T')[0];
-}
-
-/**
- * Removes sensitive fields from user object.
- *
- * @param {object} user - User object from in-memory store.
- * @returns {object} Safe user payload.
- */
-function toSafeUser(user) {
+function toSafeUser(authIdentity) {
   return {
-    id: user.id,
-    fullName: user.fullName,
-    email: user.email,
-    role: user.role,
-    isActive: user.isActive,
-    createdAt: user.createdAt,
+    id: authIdentity.id,
+    fullName: authIdentity.userProfile?.fullName || 'N/A',
+    email: authIdentity.email,
+    role: authIdentity.role.roleName,
+    isActive: authIdentity.isActive,
+    createdAt: authIdentity.createdAt,
   };
 }
 
 /**
- * Returns all users with optional filters.
- *
- * @param {import('express').Request} req - Express request object.
- * @param {import('express').Response} res - Express response object.
- * @returns {import('express').Response} HTTP response.
+ * Returns all users with optional filters using Prisma.
  */
-export function getAllUsers(req, res) {
+export async function getAllUsers(req, res) {
   try {
     const { role, isActive, search } = req.query;
 
-    if (role !== undefined && !ALLOWED_ROLES.includes(role)) {
-      return res.status(400).json({
-        success: false,
-        message: 'role must be one of: customer, organiser, admin',
-      });
-    }
-
-    if (isActive !== undefined && !['true', 'false'].includes(String(isActive))) {
-      return res.status(400).json({
-        success: false,
-        message: 'isActive must be true or false',
-      });
-    }
-
-    let users = [...store.users];
+    const where = {};
 
     if (role !== undefined) {
-      users = users.filter((user) => user.role === role);
+      where.role = {
+        roleName: role.toUpperCase()
+      };
     }
 
     if (isActive !== undefined) {
-      const isActiveBool = String(isActive) === 'true';
-      users = users.filter((user) => user.isActive === isActiveBool);
+      where.isActive = String(isActive) === 'true';
     }
 
     if (search !== undefined && String(search).trim().length > 0) {
-      const keyword = String(search).trim().toLowerCase();
-      users = users.filter((user) => {
-        const fullName = String(user.fullName || '').toLowerCase();
-        const email = String(user.email || '').toLowerCase();
-        return fullName.includes(keyword) || email.includes(keyword);
-      });
+      const keyword = String(search).trim();
+      where.OR = [
+        { email: { contains: keyword, mode: 'insensitive' } },
+        { userProfile: { fullName: { contains: keyword, mode: 'insensitive' } } }
+      ];
     }
+
+    const users = await prisma.authIdentity.findMany({
+      where,
+      include: {
+        role: true,
+        userProfile: true,
+      },
+      orderBy: { createdAt: 'desc' }
+    });
 
     const safeUsers = users.map((user) => toSafeUser(user));
 
@@ -80,6 +60,7 @@ export function getAllUsers(req, res) {
       users: safeUsers,
     });
   } catch (error) {
+    console.error('[GetAllUsers Error]:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal Server Error',
@@ -88,45 +69,25 @@ export function getAllUsers(req, res) {
 }
 
 /**
- * Updates a user's account active status.
- *
- * @param {import('express').Request} req - Express request object.
- * @param {import('express').Response} res - Express response object.
- * @returns {import('express').Response} HTTP response.
+ * Updates a user's account active status using Prisma.
  */
-export function updateUserStatus(req, res) {
+export async function updateUserStatus(req, res) {
   try {
     const { id } = req.params;
     const { isActive } = req.body;
 
-    if (typeof isActive !== 'boolean') {
-      return res.status(400).json({
-        success: false,
-        message: 'isActive must be a boolean',
-      });
-    }
+    const userId = parseInt(id);
 
-    const user = store.users.find((item) => item.id === id);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found',
-      });
-    }
-
-    if (user.id === req.user.userId && isActive === false) {
-      return res.status(400).json({
-        success: false,
-        message: 'You cannot deactivate your own account',
-      });
-    }
-
-    user.isActive = isActive;
+    const updatedUser = await prisma.authIdentity.update({
+      where: { id: userId },
+      data: { isActive },
+      include: { role: true, userProfile: true }
+    });
 
     return res.status(200).json({
       success: true,
       message: 'Account status updated',
-      user: toSafeUser(user),
+      user: toSafeUser(updatedUser),
     });
   } catch (error) {
     return res.status(500).json({
@@ -137,45 +98,35 @@ export function updateUserStatus(req, res) {
 }
 
 /**
- * Updates a user's role.
- *
- * @param {import('express').Request} req - Express request object.
- * @param {import('express').Response} res - Express response object.
- * @returns {import('express').Response} HTTP response.
+ * Updates a user's role using Prisma.
  */
-export function updateUserRole(req, res) {
+export async function updateUserRole(req, res) {
   try {
     const { id } = req.params;
     const { role } = req.body;
 
-    if (!ALLOWED_ROLES.includes(role)) {
-      return res.status(400).json({
-        success: false,
-        message: 'role must be one of: customer, organiser, admin',
+    const userId = parseInt(id);
+
+    let roleRecord = await prisma.role.findUnique({
+      where: { roleName: role.toUpperCase() }
+    });
+
+    if (!roleRecord) {
+      roleRecord = await prisma.role.create({
+        data: { roleName: role.toUpperCase() }
       });
     }
 
-    const user = store.users.find((item) => item.id === id);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found',
-      });
-    }
-
-    if (user.id === req.user.userId) {
-      return res.status(400).json({
-        success: false,
-        message: 'You cannot change your own role',
-      });
-    }
-
-    user.role = role;
+    const updatedUser = await prisma.authIdentity.update({
+      where: { id: userId },
+      data: { roleId: roleRecord.id },
+      include: { role: true, userProfile: true }
+    });
 
     return res.status(200).json({
       success: true,
       message: 'Role updated',
-      user: toSafeUser(user),
+      user: toSafeUser(updatedUser),
     });
   } catch (error) {
     return res.status(500).json({
@@ -186,51 +137,55 @@ export function updateUserRole(req, res) {
 }
 
 /**
- * Returns dashboard statistics for admin.
- *
- * @param {import('express').Request} req - Express request object.
- * @param {import('express').Response} res - Express response object.
- * @returns {import('express').Response} HTTP response.
+ * Returns dashboard statistics for admin using Prisma.
  */
-export function getDashboardStats(req, res) {
+export async function getDashboardStats(req, res) {
   try {
-    const today = startOfToday();
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
 
-    const totalUsers = store.users.length;
-    const totalOrganisers = store.users.filter(
-      (u) => u.role === 'organiser'
-    ).length;
-    const totalCustomers = store.users.filter(
-      (u) => u.role === 'customer'
-    ).length;
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
 
-    const totalAppointmentTypes = store.appointmentTypes.length;
-    const publishedAppointmentTypes = store.appointmentTypes.filter(
-      (at) => at.isPublished === true
-    ).length;
-
-    const totalBookings = store.bookings.length;
-    const pendingBookings = store.bookings.filter(
-      (b) => b.status === 'pending'
-    ).length;
-    const confirmedBookings = store.bookings.filter(
-      (b) => b.status === 'confirmed'
-    ).length;
-    const cancelledBookings = store.bookings.filter(
-      (b) => b.status === 'cancelled'
-    ).length;
-    const todayBookings = store.bookings.filter(
-      (b) => b.date === today
-    ).length;
-
-    const totalResources = store.resources.length;
+    const [
+      totalUsers,
+      totalOrganisers,
+      totalCustomers,
+      totalServices,
+      publishedServices,
+      totalBookings,
+      pendingBookings,
+      confirmedBookings,
+      cancelledBookings,
+      todayBookings,
+      totalResources
+    ] = await Promise.all([
+      prisma.authIdentity.count(),
+      prisma.authIdentity.count({ where: { role: { roleName: 'ORGANISER' } } }),
+      prisma.authIdentity.count({ where: { role: { roleName: 'CUSTOMER' } } }),
+      prisma.service.count(),
+      prisma.service.count({ where: { isPublished: true } }),
+      prisma.appointment.count(),
+      prisma.appointment.count({ where: { status: 'PENDING' } }),
+      prisma.appointment.count({ where: { status: 'CONFIRMED' } }),
+      prisma.appointment.count({ where: { status: 'CANCELLED' } }),
+      prisma.appointment.count({
+        where: {
+          startTime: {
+            gte: startOfToday,
+            lte: endOfToday
+          }
+        }
+      }),
+      prisma.resource.count()
+    ]);
 
     const stats = {
       totalUsers,
       totalOrganisers,
       totalCustomers,
-      totalAppointmentTypes,
-      publishedAppointmentTypes,
+      totalAppointmentTypes: totalServices,
+      publishedAppointmentTypes: publishedServices,
       totalBookings,
       pendingBookings,
       confirmedBookings,
@@ -244,7 +199,7 @@ export function getDashboardStats(req, res) {
       stats,
     });
   } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
+    console.error('[GetDashboardStats Error]:', error);
     return res.status(500).json({
       success: false,
       message: 'Error fetching dashboard stats',
