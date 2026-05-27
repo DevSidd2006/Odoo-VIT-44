@@ -57,44 +57,46 @@ model User {
   email        String   @unique
   passwordHash String
   role         UserRole @default(CUSTOMER)
-  
+
   // Profile Fields
   fullName     String
-  phone        String?   @unique
+  phone        String? @unique
   gender       Gender?
-  bio          String?   @db.Text
+  bio          String? @db.Text
   profilePhoto String?
-  
+
   // Status
-  isVerified   Boolean   @default(false)
-  isActive     Boolean   @default(true)
+  isVerified Boolean @default(false)
+  isActive   Boolean @default(true)
 
   // Relations
-  otps         OtpVerification[]
-  services     Service[]         // Services offered by this user (if Provider)
-  bookings     Booking[]         // Bookings made by this user (if Customer)
+  otps     OtpVerification[]
+  services Service[] // Services offered by this user (if Provider)
+  bookings Booking[] // Bookings made by this user (if Customer)
 
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model OtpVerification {
-  id      Int        @id @default(autoincrement())
-  userId  Int
-  code    String     @db.VarChar(10)
-  purpose OtpPurpose
-  
-  user    User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        Int        @id @default(autoincrement())
+  userId    Int
+  code      String     @db.VarChar(10)
+  purpose   OtpPurpose
+  expiresAt DateTime
+  isUsed    Boolean    @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model ServiceCategory {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
-  slug        String    @unique
-  services    Service[]
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  slug     String    @unique
+  services Service[]
 }
 
 model Service {
@@ -108,7 +110,7 @@ model Service {
   bufferTime              Int               @default(0)
   isPublished             Boolean           @default(false)
   
-  // Phase 3 Additions (Admin Configs)
+  // Custom Settings
   location                String?
   introMessage            String?
   confirmMessage          String?
@@ -140,7 +142,8 @@ model ScheduleSlot {
   endTime      String       // HH:mm
   capacity     Int          @default(1)
   bookedCount  Int          @default(0)
-  
+  isBlocked    Boolean      @default(false)
+
   service      Service      @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   bookings     Booking[]
 
@@ -154,36 +157,36 @@ model Booking {
   slotId       Int
   status       BookingStatus @default(PENDING)
   startTime    DateTime
-  
-  service      Service       @relation(fields: [serviceId], references: [id])
-  customer     User          @relation(fields: [customerId], references: [id])
-  slot         ScheduleSlot  @relation(fields: [slotId], references: [id])
-  
-  answers      BookingAnswer[]
-  payment      Payment?
 
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  service  Service      @relation(fields: [serviceId], references: [id])
+  customer User         @relation(fields: [customerId], references: [id])
+  slot     ScheduleSlot @relation(fields: [slotId], references: [id])
+
+  answers BookingAnswer[]
+  payment Payment?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model BookingQuestion {
-  id           Int           @id @default(autoincrement())
-  serviceId    Int
+  id         Int     @id @default(autoincrement())
+  serviceId  Int
   label      String
-  isRequired   Boolean       @default(true)
-  
-  service      Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  answers      BookingAnswer[]
+  isRequired Boolean @default(true)
+
+  service Service         @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  answers BookingAnswer[]
 }
 
 model BookingAnswer {
-  id           Int             @id @default(autoincrement())
-  bookingId    Int
-  questionId   Int
-  answer       String          @db.Text
-  
-  booking      Booking         @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  question     BookingQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  id         Int    @id @default(autoincrement())
+  bookingId  Int
+  questionId Int
+  answer     String @db.Text
+
+  booking  Booking         @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  question BookingQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
 }
 
 model Payment {
@@ -193,8 +196,8 @@ model Payment {
   currency      String        @default("INR")
   status        PaymentStatus @default(PENDING)
   transactionId String?       @unique
-  
-  booking       Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
-  createdAt     DateTime      @default(now())
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
 }

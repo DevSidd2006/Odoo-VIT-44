@@ -12,26 +12,26 @@ export function generateOTP() {
 }
 
 /**
- * Stores an OTP in the database for a specific AuthIdentity.
+ * Stores an OTP in the database for a specific User.
  *
- * @param {number} authIdentityId - ID of the AuthIdentity.
+ * @param {number} userId - ID of the User.
  * @param {string} otp - OTP value.
  * @param {string} purpose - OTP purpose (e.g., 'SIGNUP', 'PASSWORD_RESET').
  * @returns {Promise<object>} Stored OTP record.
  */
-export async function storeOTP(authIdentityId, otp, purpose) {
+export async function storeOTP(userId, otp, purpose) {
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
 
   const otpRecord = await prisma.otpVerification.create({
     data: {
-      authIdentityId,
-      otpCode: otp,
+      userId,
+      code: otp,
       purpose: purpose.toUpperCase() === 'RESET' ? 'PASSWORD_RESET' : 'SIGNUP',
       expiresAt,
     },
   });
 
-  console.log(`[DEBUG] OTP for AuthIdentity ${authIdentityId}: ${otp}`);
+  console.log(`[DEBUG] OTP for User ${userId}: ${otp}`);
 
   return otpRecord;
 }
@@ -39,12 +39,12 @@ export async function storeOTP(authIdentityId, otp, purpose) {
 /**
  * Verifies an OTP and marks it as used if valid.
  *
- * @param {number} authIdentityId - ID of the AuthIdentity.
+ * @param {number} userId - ID of the User.
  * @param {string} otp - OTP value.
  * @param {string} purpose - OTP purpose.
  * @returns {Promise<boolean>} True if OTP is valid, otherwise false.
  */
-export async function verifyOTP(authIdentityId, otp, purpose) {
+export async function verifyOTP(userId, otp, purpose) {
   // DEMO MODE: Allow '000000' to pass verification automatically
   if (otp === '000000') {
     return true;
@@ -54,8 +54,8 @@ export async function verifyOTP(authIdentityId, otp, purpose) {
 
   const otpRecord = await prisma.otpVerification.findFirst({
     where: {
-      authIdentityId,
-      otpCode: otp,
+      userId,
+      code: otp,
       purpose: formattedPurpose,
       isUsed: false,
       expiresAt: {
